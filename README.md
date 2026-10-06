@@ -5,7 +5,7 @@ A one-page web app for the [Suno API](https://docs.sunoapi.org). Paste your API 
 ## Features
 
 - **Accounts**: sign up and log in with email and password through Supabase Auth. Includes email confirmation, forgot/reset password, and log out. Each account has its own library and Suno key on the device.
-- **Key gate**: the app checks your key against the credits endpoint before letting you in. You can keep it on this device (localStorage) or only for the current tab session. **Sign out** erases it.
+- **Key gate**: the app checks your key against the credits endpoint before letting you in. You can keep it on this device (localStorage) or only for the current tab session. **Change Suno API key** in the account menu erases it.
 - **Create**
   - *Simple mode*: describe the song. There are idea chips and a 🎲 Surprise me button, and you can add image, audio or video files as inspiration.
   - *Custom mode*: title, style (with genre and mood chips plus ✨ **Boost style**), lyrics with section-tag buttons, excluded styles, vocal gender, style adherence, weirdness, audio weight, variety, length (10–360s) and persona.
