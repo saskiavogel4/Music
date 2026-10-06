@@ -4,6 +4,7 @@ A one-page web app for the [Suno API](https://docs.sunoapi.org). Paste your API 
 
 ## Features
 
+- **Accounts**: sign up and log in with email and password through Supabase Auth. Includes email confirmation, forgot/reset password, and log out. Each account has its own library and Suno key on the device.
 - **Key gate**: the app checks your key against the credits endpoint before letting you in. You can keep it on this device (localStorage) or only for the current tab session. **Sign out** erases it.
 - **Create**
   - *Simple mode*: describe the song. There are idea chips and a 🎲 Surprise me button, and you can add image, audio or video files as inspiration.
@@ -21,6 +22,13 @@ A one-page web app for the [Suno API](https://docs.sunoapi.org). Paste your API 
 - Suno tasks are asynchronous. Every endpoint requires a `callBackUrl`, and the app points it at `/.netlify/functions/suno-callback`, which does nothing but reply OK. Results come from polling the `record-info` endpoints instead. Unfinished jobs are saved in the browser and pick up again after a reload.
 - `netlify.toml` proxies `/proxy/suno/*` → `api.sunoapi.org` and `/proxy/upload/*` → the Suno file-upload host, so the browser never runs into CORS. If the proxy isn't there (for example on a local static server), the app switches to calling the API directly.
 - The library, lyrics and personas are stored in `localStorage`. Suno keeps the generated files for about 14 days.
+
+## Accounts (Supabase)
+
+- `config.js` holds the Supabase project URL and its **publishable** key. That key is meant to live in browser code.
+- `auth.js` shows the login screen until there's a session, then starts the studio.
+- One-time setup in the Supabase dashboard: go to **Authentication → URL Configuration**, set **Site URL** to the Netlify URL, and add `https://<your-site>.netlify.app/**` under **Redirect URLs**. Without this, the confirmation and password-reset emails link to `localhost:3000`.
+- Supabase's built-in email sender only allows a few emails per hour. That's fine for personal use. For real sign-up traffic, set up custom SMTP under **Authentication → Emails → SMTP Settings**.
 
 ## Deploy
 

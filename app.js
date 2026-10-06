@@ -14,9 +14,14 @@
   const round2 = (n) => Math.round(Number(n) * 100) / 100;
   const slug = (s) => String(s || 'track').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'track';
 
+  // Library, jobs, personas, lyrics and the API key are kept per signed-in user;
+  // UI preferences (mode, model, volume) are shared on the device.
+  const GLOBAL_KEYS = new Set(['vol', 'mode', 'model']);
+  let scope = 'riff.';
+  const fullKey = (k) => (GLOBAL_KEYS.has(k) ? 'riff.' : scope) + k;
   const store = {
-    get(k, d) { try { const v = localStorage.getItem('riff.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-    set(k, v) { try { localStorage.setItem('riff.' + k, JSON.stringify(v)); } catch { /* quota / private mode */ } },
+    get(k, d) { try { const v = localStorage.getItem(fullKey(k)); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(fullKey(k), JSON.stringify(v)); } catch { /* quota / private mode */ } },
   };
 
   // ---------- constants from the Suno API docs ----------
@@ -129,10 +134,11 @@
   // ---------- state ----------
   const state = {
     key: '',
-    tracks: store.get('tracks', []),
-    jobs: store.get('jobs', []),
-    personas: store.get('personas', []),
-    lyrics: store.get('lyrics', []),
+    user: null,
+    tracks: [],
+    jobs: [],
+    personas: [],
+    lyrics: [],
     mode: store.get('mode', 'simple'),
     model: store.get('model', 'V6'),
     showLegacy: false,
@@ -201,16 +207,16 @@
 
   // ---------- gate ----------
   function readKey() {
-    try { return localStorage.getItem('riff.key') || sessionStorage.getItem('riff.key') || ''; } catch { return ''; }
+    try { return localStorage.getItem(scope + 'key') || sessionStorage.getItem(scope + 'key') || ''; } catch { return ''; }
   }
   function saveKey(k, remember) {
     try {
-      localStorage.removeItem('riff.key'); sessionStorage.removeItem('riff.key');
-      (remember ? localStorage : sessionStorage).setItem('riff.key', k);
+      localStorage.removeItem(scope + 'key'); sessionStorage.removeItem(scope + 'key');
+      (remember ? localStorage : sessionStorage).setItem(scope + 'key', k);
     } catch { /* ignore */ }
   }
   function signOut(msg) {
-    try { localStorage.removeItem('riff.key'); sessionStorage.removeItem('riff.key'); } catch { /* ignore */ }
+    try { localStorage.removeItem(scope + 'key'); sessionStorage.removeItem(scope + 'key'); } catch { /* ignore */ }
     state.key = '';
     audio.pause();
     $('#app').hidden = true;
@@ -245,7 +251,13 @@
     } finally { setBusy(btn, false); }
   });
   $('#signout').addEventListener('click', () => {
-    if (confirm('Sign out and forget your API key on this device? Your library stays here.')) signOut();
+    $('#account-menu').classList.remove('open');
+    if (confirm('Forget your Suno API key on this device? You’ll be asked for a key again. Your library stays here.')) signOut();
+  });
+  $('#account-btn').addEventListener('click', () => {
+    const m = $('#account-menu');
+    m.classList.toggle('open');
+    $('#account-btn').setAttribute('aria-expanded', m.classList.contains('open'));
   });
 
   function enterApp() {
@@ -1476,7 +1488,60 @@
   // Refresh "elapsed" labels on active jobs.
   setInterval(() => { if (state.jobs.some((j) => !['DONE', 'FAILED'].includes(j.status))) renderJobs(); }, 1000);
 
-  state.key = readKey();
-  if (state.key) enterApp();
-  else { $('#gate').hidden = false; $('#gate-key').focus(); }
+  // ---------- session lifecycle (driven by auth.js) ----------
+  const USER_KEYS = ['tracks', 'jobs', 'personas', 'lyrics'];
+
+  // Data created before accounts existed belongs to whoever signs in first on this device.
+  function adoptLegacyData() {
+    try {
+      USER_KEYS.forEach((k) => {
+        const old = localStorage.getItem('riff.' + k);
+        if (old != null && localStorage.getItem(scope + k) == null) localStorage.setItem(scope + k, old);
+        localStorage.removeItem('riff.' + k);
+      });
+      [localStorage, sessionStorage].forEach((st) => {
+        const old = st.getItem('riff.key');
+        if (old && !st.getItem(scope + 'key')) st.setItem(scope + 'key', old);
+        st.removeItem('riff.key');
+      });
+    } catch { /* storage unavailable */ }
+  }
+
+  function start(user) {
+    if (state.user?.id === user.id) return;
+    if (state.user) stop();
+    state.user = user;
+    scope = `riff.u.${user.id}.`;
+    adoptLegacyData();
+    state.tracks = store.get('tracks', []);
+    state.jobs = store.get('jobs', []);
+    state.personas = store.get('personas', []);
+    state.lyrics = store.get('lyrics', []);
+    const email = user.email || 'your account';
+    $$('.who').forEach((el) => { el.textContent = email; });
+    $('#avatar').textContent = email.charAt(0);
+    state.key = readKey();
+    if (state.key) enterApp();
+    else { $('#gate-error').hidden = true; $('#gate').hidden = false; $('#gate-key').focus(); }
+  }
+
+  function stop() {
+    state.key = '';
+    state.user = null;
+    scope = 'riff.';
+    state.tracks = []; state.jobs = []; state.personas = []; state.lyrics = [];
+    state.current = null;
+    audio.pause(); audio.removeAttribute('src');
+    if (modal.open) modal.close();
+    openKaraoke(false);
+    $('#player').hidden = true;
+    $('#app').classList.remove('has-player');
+    $('#account-menu').classList.remove('open');
+    $('#app').hidden = true;
+    $('#gate').hidden = true;
+    $('#gate-key').value = '';
+    $$('.toast').forEach((t) => t.remove());
+  }
+
+  window.Riff = { start, stop };
 })();

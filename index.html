@@ -17,6 +17,55 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- ============ AUTH: email login ============ -->
+  <section id="auth" class="gate" data-view="signin" hidden>
+    <div class="gate-bg" aria-hidden="true">
+      <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+    </div>
+    <div class="gate-card">
+      <div class="brand brand-lg">
+        <span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <span>Riff</span>
+      </div>
+      <h1 id="auth-title">Welcome back.</h1>
+      <p class="lead" id="auth-lead">Log in to your studio.</p>
+
+      <div class="seg auth-tabs" role="tablist" data-show="signin signup">
+        <button type="button" role="tab" data-go="signin">Log in</button>
+        <button type="button" role="tab" data-go="signup">Create account</button>
+      </div>
+
+      <form id="auth-form" novalidate data-show="signin signup forgot reset">
+        <label class="field" data-show="signin signup forgot">
+          <span class="label">Email</span>
+          <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required spellcheck="false" />
+        </label>
+        <label class="field" data-show="signin signup reset">
+          <span class="label-row"><span class="label" id="auth-pass-label">Password</span><button type="button" class="link-btn" data-go="forgot" data-show="signin">Forgot password?</button></span>
+          <div class="input-with-btn">
+            <input id="auth-pass" type="password" autocomplete="current-password" placeholder="••••••••" minlength="6" required />
+            <button type="button" class="icon-btn" id="auth-toggle" aria-label="Show password" title="Show password">👁</button>
+          </div>
+          <small class="hint" data-show="signup reset">At least 8 characters.</small>
+        </label>
+        <button class="btn btn-primary btn-lg btn-block" id="auth-submit" type="submit"><span class="btn-label">Log in</span></button>
+        <p class="center" data-show="forgot"><button type="button" class="link-btn" data-go="signin">← Back to log in</button></p>
+      </form>
+
+      <div class="auth-sent" data-show="sent">
+        <div class="auth-mail" aria-hidden="true">✉️</div>
+        <p id="auth-sent-text"></p>
+        <div class="auth-sent-actions">
+          <button type="button" class="btn" id="auth-resend">Resend email</button>
+          <button type="button" class="btn btn-primary" data-go="signin">Back to log in</button>
+        </div>
+      </div>
+
+      <p class="gate-error" id="auth-error" role="alert" hidden></p>
+      <p class="auth-ok" id="auth-ok" role="status" hidden></p>
+    </div>
+  </section>
+
   <!-- ============ GATE: API key ============ -->
   <section id="gate" class="gate" hidden>
     <div class="gate-bg" aria-hidden="true">
@@ -53,7 +102,8 @@
         </button>
         <p class="gate-error" id="gate-error" role="alert" hidden></p>
       </form>
-      <p class="fine">Your key stays in this browser and is only sent to the Suno API. Use “Sign out” anytime to erase it.</p>
+      <p class="fine">Your key stays in this browser and is only sent to the Suno API. You can change it anytime from the account menu.</p>
+      <p class="fine">Signed in as <b class="who"></b> · <button type="button" class="link-btn" data-logout>Log out</button></p>
     </div>
   </section>
 
@@ -73,7 +123,17 @@
           <button role="radio" data-theme-set="system" title="System" aria-label="System theme">◐</button>
           <button role="radio" data-theme-set="dark" title="Dark" aria-label="Dark theme">☾</button>
         </div>
-        <button class="btn btn-ghost btn-sm" id="signout" title="Forget API key">Sign out</button>
+        <div class="menu-wrap account">
+          <button class="btn btn-ghost btn-sm account-btn" id="account-btn" aria-haspopup="true" aria-expanded="false" title="Account">
+            <span class="avatar" id="avatar" aria-hidden="true">?</span><span class="account-email who"></span><span aria-hidden="true">▾</span>
+          </button>
+          <div class="menu" id="account-menu" role="menu">
+            <div class="menu-head">Signed in as<br /><b class="who"></b></div>
+            <hr />
+            <button role="menuitem" id="signout">🔑 Change Suno API key</button>
+            <button role="menuitem" data-logout class="danger">↩ Log out</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -303,6 +363,9 @@
   <div id="toasts" class="toasts" aria-live="polite"></div>
   <div id="confetti" class="confetti" aria-hidden="true"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>
